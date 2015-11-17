@@ -7,7 +7,8 @@ obj-m	:= $(TARGET).o
 
 else
 
-KERNELDIR ?= /usr/src/linux
+#KERNELDIR ?= /usr/src/linux
+KERNELDIR ?= /lib/modules/$(shell uname -r)/build
 PWD       := $(shell pwd)
 
 default:
