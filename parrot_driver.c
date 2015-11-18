@@ -27,6 +27,9 @@
 #include <linux/types.h>
 #include <linux/mutex.h>
 #include <linux/kfifo.h>
+#include <linux/ioctl.h>
+#include <asm/uaccess.h>
+
 #include "parrot_driver.h"
 
 /* Module information */
@@ -50,13 +53,65 @@ static unsigned int parrot_msg_len[PARROT_MSG_FIFO_MAX];
 /* Read and write index for the table above */
 static int parrot_msg_idx_rd, parrot_msg_idx_wr;
 
+
+
+
+
+
+
+
 /* Module parameters that can be provided on insmod */
-static bool debug = false;	/* print extra debug info */
+static bool debug = true;	/* print extra debug info */
 module_param(debug, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "enable debug info (default: false)");
 static bool one_shot = true;	/* only read a single message after open() */
 module_param(one_shot, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(one_shot, "disable the readout of multiple messages at once (default: true)");
+
+
+unsigned long int testme = 0;
+
+
+static long parrot_device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
+{
+
+      int err = 0;//, tmp;
+      //int retval = 0;
+
+      printk(KERN_INFO "Incoming to parrot ioctl...\n");
+
+      /*
+         * extract the type and number bitfields, and don't decode
+         * wrong cmds: return ENOTTY (inappropriate ioctl) before access_ok()
+         */
+        /* if (_IOC_TYPE(cmd) != PARROT_IOC_MAGIC) return -ENOTTY; */
+        /* if (_IOC_NR(cmd) > PARROT_IOC_MAXNR) return -ENOTTY; */
+
+        /* /\* */
+        /*  * the direction is a bitmask, and VERIFY_WRITE catches R/W */
+        /*  * transfers. `Type' is user-oriented, while */
+        /*  * access_ok is kernel-oriented, so the concept of "read" and */
+        /*  * "write" is reversed */
+        /*  *\/ */
+        /* if (_IOC_DIR(cmd) & _IOC_READ){ */
+        /*         err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd)); */
+        /*         printk(KERN_INFO "Warinig  ioctl can't write data to user space...\n"); */
+        /* } */
+        /* else if (_IOC_DIR(cmd) & _IOC_WRITE){ */
+        /*     err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd)); */
+        /*         printk(KERN_INFO "Warinig  ioctl can't read data from user space...\n"); */
+        /* } */
+        /* if (err) return -1; */
+
+
+	testme++;
+
+dbg("ioctl call counter testme==%ld addr==0x%lx",testme,(unsigned long)&testme );
+
+	__put_user(&testme,(unsigned long __user *)arg);
+
+	return 0;
+}
 
 
 static int parrot_device_open(struct inode* inode, struct file* filp)
@@ -118,9 +173,11 @@ static ssize_t parrot_device_read(struct file* filp, char __user *buffer, size_t
 /* The file_operation scructure tells the kernel which device operations are handled.
  * For a list of available file operations, see http://lwn.net/images/pdf/LDD3/ch03.pdf */
 static struct file_operations fops = {
-	.read = parrot_device_read,
-	.open = parrot_device_open,
-	.release = parrot_device_close
+        .owner =   THIS_MODULE,
+	.read =    parrot_device_read, 
+	.open =    parrot_device_open, 
+	.release = parrot_device_close, 
+	.unlocked_ioctl = parrot_device_ioctl
 };
 
 /* Placing data into the read FIFO is done through sysfs */
