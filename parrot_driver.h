@@ -40,6 +40,14 @@
 #define warn(format, arg...) pr_warn(CLASS_NAME ": " format, ## arg)
 
 
+typedef struct {
+  int is_placed;
+  size_t area_size;  //in bytes
+  void *area;
+  void *ph_area;
+
+} memory_area;
+
 /*
  * Ioctl definitions
  */
@@ -59,7 +67,8 @@
  * H means "sHift": switch T and Q atomically
  */
 
-#define PARROT_IOCRGETADDR _IOR(PARROT_IOC_MAGIC,  5, unsigned long int)
+#define PARROT_IOGETDMA    _IOW(PARROT_IOC_MAGIC,  2, unsigned long int)
+#define PARROT_IOCLEARDMA  _IOR(PARROT_IOC_MAGIC,  5, unsigned long int)
 
 #define PARROT_IOC_MAXNR 14
 
@@ -76,6 +85,10 @@
 /* #define PARROT_IOCXQSET    _IOWR(PARROT_IOC_MAGIC,10, int) */
 /* #define PARROT_IOCHQUANTUM _IO(PARROT_IOC_MAGIC,  11) */
 /* #define PARROT_IOCHQSET    _IO(PARROT_IOC_MAGIC,  12) */
+
+
+
+
 
 
 #endif

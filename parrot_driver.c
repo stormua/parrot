@@ -30,6 +30,8 @@
 #include <linux/ioctl.h>
 #include <asm/uaccess.h>
 
+#include <linux/dma-mapping.h>
+
 #include "parrot_driver.h"
 
 /* Module information */
@@ -57,8 +59,7 @@ static int parrot_msg_idx_rd, parrot_msg_idx_wr;
 
 
 
-
-
+unsigned long int testme = 0;
 
 /* Module parameters that can be provided on insmod */
 static bool debug = true;	/* print extra debug info */
@@ -68,47 +69,91 @@ static bool one_shot = true;	/* only read a single message after open() */
 module_param(one_shot, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(one_shot, "disable the readout of multiple messages at once (default: true)");
 
+unsigned long kv_addr=0;
+dma_addr_t dma_handle;
+size_t dma_size=0;
 
-unsigned long int testme = 0;
 
+#define GETPAGES4DMA 10
 
 static long parrot_device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
 {
+	int err = 0;//, tmp;
+	//int retval = 0;
+	//unsigned long int *addr;
+	memory_area mem_arg;
 
-      int err = 0;//, tmp;
-      //int retval = 0;
+	printk(KERN_INFO "Incoming to parrot ioctl...\n");
 
-      printk(KERN_INFO "Incoming to parrot ioctl...\n");
+	/* extract the type and number bitfields, and don't decode */
+	/*   wrong cmds: return ENOTTY (inappropriate ioctl) before access_ok() */
+	if (_IOC_TYPE(cmd) != PARROT_IOC_MAGIC)
+		return -ENOTTY;
+	if (_IOC_NR(cmd) > PARROT_IOC_MAXNR)
+		return -ENOTTY;
 
-      /*
-         * extract the type and number bitfields, and don't decode
-         * wrong cmds: return ENOTTY (inappropriate ioctl) before access_ok()
-         */
-        /* if (_IOC_TYPE(cmd) != PARROT_IOC_MAGIC) return -ENOTTY; */
-        /* if (_IOC_NR(cmd) > PARROT_IOC_MAXNR) return -ENOTTY; */
+	/*
+	 * the direction is a bitmask, and VERIFY_WRITE catches R/W
+	 * transfers. `Type' is user-oriented, while
+	 * access_ok is kernel-oriented, so the concept of "read" and
+	 * "write" is reversed
+	 */
+	if (_IOC_DIR(cmd) & _IOC_READ) {
+	err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
+	//printk(KERN_INFO "Warinig  ioctl can't write data to user space...\n");
+	} else if (_IOC_DIR(cmd) & _IOC_WRITE) {
+		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
+		printk(KERN_INFO "Warinig  ioctl can't read data from user space...\n");
+	}
+//	if (err)
+//		return -1;
 
-        /* /\* */
-        /*  * the direction is a bitmask, and VERIFY_WRITE catches R/W */
-        /*  * transfers. `Type' is user-oriented, while */
-        /*  * access_ok is kernel-oriented, so the concept of "read" and */
-        /*  * "write" is reversed */
-        /*  *\/ */
-        /* if (_IOC_DIR(cmd) & _IOC_READ){ */
-        /*         err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd)); */
-        /*         printk(KERN_INFO "Warinig  ioctl can't write data to user space...\n"); */
-        /* } */
-        /* else if (_IOC_DIR(cmd) & _IOC_WRITE){ */
-        /*     err =  !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd)); */
-        /*         printk(KERN_INFO "Warinig  ioctl can't read data from user space...\n"); */
-        /* } */
-        /* if (err) return -1; */
-
-
+	copy_from_user(&mem_arg,(memory_area*)arg,sizeof(memory_area));
 	testme++;
+	switch(cmd){
+	case PARROT_IOGETDMA:
+		if(mem_arg.is_placed==0){
 
-dbg("ioctl call counter testme==%ld addr==0x%lx",testme,(unsigned long)&testme );
+		}
 
-	__put_user(&testme,(unsigned long __user *)arg);
+		//addr = __pa(&testme);
+
+		//
+		dma_size=mem_arg.area_size;
+		printk(KERN_INFO "Ask kernel  for  %d pages", 2<<GETPAGES4DMA);
+
+		kv_addr=__get_free_pages(0,GETPAGES4DMA);//kmalloc(dma_size,__GFP_DMA);
+
+
+		//kv_addr=dma_alloc_coherent(parrot_device, dma_size, &dma_handle, GFP_DMA);
+		printk(KERN_INFO "Get from kernel  at %lx", (unsigned long)kv_addr);
+
+		//dma_handle=dma_map_single(parrot_device,kv_addr,dma_size,DMA_BIDIRECTIONAL);
+
+		if(kv_addr!=0){
+			mem_arg.is_placed=1;
+			mem_arg.area=kv_addr;
+			//			mem_arg.ph_area=__pa(kv_addr);
+
+			printk(KERN_INFO "ioctl asks for %d bytes  kv_addr==0x%lx, saves to 0x%lx", (unsigned int)dma_size, (unsigned long)kv_addr, __pa(kv_addr));
+
+			copy_to_user((void *)arg,&mem_arg,sizeof(memory_area));
+		}else{
+
+		  printk(KERN_INFO "get NULL from __get_free_pages(0,%d)\n",GETPAGES4DMA);
+
+		}
+		break;
+	case PARROT_IOCLEARDMA:
+//		dma_unmap_single(parrot_device,dma_handle,dma_size,DMA_BIDIRECTIONAL);
+		//kfree(kv_addr);
+		//dma_free_coherent(parrot_device, dma_size, kv_addr,dma_handle);
+		free_pages(kv_addr,GETPAGES4DMA);
+
+		dma_size=0;
+		break;
+}
+
 
 	return 0;
 }
@@ -266,10 +311,14 @@ static int __init parrot_module_init(void)
 		warn("failed to create reset /sys endpoint - continuing without\n");
 	}
 
+	dma_declare_coherent_memory(parrot_device, 0x1233, 0x3456, 5000000,DMA_MEMORY_MAP);
+
 	mutex_init(&parrot_device_mutex);
 	/* This device uses a Kernel FIFO for its read operation */
 	INIT_KFIFO(parrot_msg_fifo);
 	parrot_msg_idx_rd = parrot_msg_idx_wr = 0;
+
+	dma_size=0;
 
 	return 0;
 
@@ -284,6 +333,7 @@ failed_chrdevreg:
 static void __exit parrot_module_exit(void)
 {
 	dbg("");
+
 	device_remove_file(parrot_device, &dev_attr_fifo);
 	device_remove_file(parrot_device, &dev_attr_reset);
 	device_destroy(parrot_class, MKDEV(parrot_major, 0));
