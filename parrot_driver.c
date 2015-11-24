@@ -143,7 +143,8 @@ static struct file_operations fops = {
 	.open =    parrot_device_open, 
 	.release = parrot_device_close, 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	.unlocked_ioctl = IOCTL_FUNCTION
+	.unlocked_ioctl = IOCTL_FUNCTION,
+	.mmap = op_mmap,
 };
 
 /* Placing data into the read FIFO is done through sysfs */

@@ -37,7 +37,7 @@ typedef struct {
 #define DEVICE_IOC_CLEARDMA  _IOR(DEVICE_IOC_MAGIC,   2, unsigned long int)
 #define DEVICE_IOC_MAPAREA   _IOWR(DEVICE_IOC_MAGIC,  3, unsigned long int)
 #define DEVICE_IOC_UNMAPAREA _IOR(DEVICE_IOC_MAGIC,   4, unsigned long int)
-
+#define DEVICE_TEST_DATA     _IO(DEVICE_IOC_MAGIC,   5)
 
 #define DEVICE_IOC_MAXNR 14
 
@@ -59,6 +59,8 @@ typedef struct {
 
 #ifdef _KERNEL_MODULE
 long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg);
+
+int op_mmap(struct file *filp, struct vm_area_struct *vma);
 #endif
 
 
