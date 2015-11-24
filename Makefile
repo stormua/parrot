@@ -1,9 +1,12 @@
-TARGET = parrot_driver
+#TARGET = parrot_driver
+
+parrotioctl-objs := parrot_driver.o device_ioctl.o
 
 ifneq ($(KERNELRELEASE),)
 # call from kernel build system
 
-obj-m	:= $(TARGET).o
+obj-m	:= parrotioctl.o
+
 
 else
 
@@ -11,7 +14,7 @@ else
 KERNELDIR ?= /lib/modules/$(shell uname -r)/build
 PWD       := $(shell pwd)
 
-default:
+default: 
 	$(MAKE) -C $(KERNELDIR) SUBDIRS=$(PWD) modules
 
 endif
@@ -31,3 +34,8 @@ rem:
 ifeq (.depend,$(wildcard .depend))
 include .depend
 endif
+
+
+test1:
+	gcc -o test1 test_parrot.c
+
