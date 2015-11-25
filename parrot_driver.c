@@ -73,7 +73,7 @@ unsigned long int testme = 0;
 static bool debug = true;	/* print extra debug info */
 module_param(debug, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "enable debug info (default: false)");
-static bool one_shot = true;	/* only read a single message after open() */
+static bool one_shot = false;	/* only read a single message after open() */
 module_param(one_shot, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(one_shot, "disable the readout of multiple messages at once (default: true)");
 

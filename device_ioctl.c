@@ -106,6 +106,7 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
   
   memory_area mem_arg;
   struct mmap_info *info;
+  char str[80];
 #ifdef DEBUG
   printk(KERN_INFO "Incoming to device ioctl...\n");
 #endif
@@ -188,7 +189,10 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
     }
     break;
   case  DEVICE_IOC_MAPAREA:
-    copy_from_user(&mem_arg,(memory_area __user *)arg,sizeof(memory_area));
+    //    copy_from_user(&mem_arg,(memory_area __user *)arg,sizeof(memory_area));
+    info=filp->private_data;
+    strncpy(str,info->data,79);
+    printk(KERN_INFO "area==_%s_\n",str);
 
     break;
   case  DEVICE_IOC_UNMAPAREA:

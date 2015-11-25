@@ -32,10 +32,12 @@ __attribute__((section("__versions"))) = {
 	{ 0xf73546d1, __VMLINUX_SYMBOL_STR(__mutex_init) },
 	{ 0x27e1a049, __VMLINUX_SYMBOL_STR(printk) },
 	{ 0x4c9d28b0, __VMLINUX_SYMBOL_STR(phys_base) },
+	{ 0x9166fada, __VMLINUX_SYMBOL_STR(strncpy) },
 	{ 0xd5f0f96e, __VMLINUX_SYMBOL_STR(device_create) },
 	{ 0x56dbb168, __VMLINUX_SYMBOL_STR(__get_page_tail) },
 	{ 0x7091ac0, __VMLINUX_SYMBOL_STR(device_create_file) },
 	{ 0x93fca811, __VMLINUX_SYMBOL_STR(__get_free_pages) },
+	{ 0xf0fdf6cb, __VMLINUX_SYMBOL_STR(__stack_chk_fail) },
 	{ 0xbdfb6dbb, __VMLINUX_SYMBOL_STR(__fentry__) },
 	{ 0x25563496, __VMLINUX_SYMBOL_STR(kmem_cache_alloc_trace) },
 	{ 0x4302d0eb, __VMLINUX_SYMBOL_STR(free_pages) },
@@ -54,4 +56,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "4AB650C2540567C2A043CC3");
+MODULE_INFO(srcversion, "172FC097B3A1E46734D7B7C");
