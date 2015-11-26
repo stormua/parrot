@@ -25,7 +25,7 @@ main()
   
   memset((void *)&test_dma,0,sizeof(memory_area));
   
-   fd=open("/dev/parrot_device",O_RDONLY);
+   fd=open("/dev/parrot_device",O_RDWR);
    if(fd==-1){
      fprintf(stderr, "Cannot open file");
      exit(1);
@@ -49,7 +49,7 @@ main()
    printf("Get from kernel size %d bytes log addr 0x%lx  phys addr == %lx\n", (int)test_dma.area_size, test_dma.area,  test_dma.ph_area);
  
 
-   address = mmap(NULL, test_dma.area_size, PROT_READ|PROT_WRITE, MAP_FIXED, fd, 0);
+   address = mmap(NULL, test_dma.area_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 
 
    if(address==(void *) -1)

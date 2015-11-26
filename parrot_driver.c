@@ -83,13 +83,6 @@ static int parrot_device_open(struct inode* inode, struct file* filp)
 {
 	dbg("");
 
-	/* Our sample device does not allow write access */
-	if ( ((filp->f_flags & O_ACCMODE) == O_WRONLY)
-	  || ((filp->f_flags & O_ACCMODE) == O_RDWR) ) {
-		warn("write access is prohibited\n");
-		return -EACCES;
-	}
-
 	/* Ensure that only one process has access to our device at any one time
  	* For more info on concurrent accesses, see http://lwn.net/images/pdf/LDD3/ch05.pdf */
 	if (!mutex_trylock(&parrot_device_mutex)) {
@@ -103,7 +96,7 @@ static int parrot_device_open(struct inode* inode, struct file* filp)
 
 static int parrot_device_close(struct inode* inode, struct file* filp)
 {
-	dbg("");
+	//dbg("");
 	mutex_unlock(&parrot_device_mutex);
 	return 0;
 }
@@ -116,17 +109,17 @@ static ssize_t parrot_device_read(struct file* filp, char __user *buffer, size_t
 	/* The default from 'cat' is to issue multiple reads until the FIFO is depleted
 	 * one_shot avoids that */
 	if (one_shot && message_read) return 0;
-	dbg("");
+//	dbg("");
 
 	if (kfifo_is_empty(&parrot_msg_fifo)) {
-		dbg("no message in fifo\n");
+//		dbg("no message in fifo\n");
 		return 0;
 	}
 
 	retval = kfifo_to_user(&parrot_msg_fifo, buffer, parrot_msg_len[parrot_msg_idx_rd], &copied);
 	/* Ignore short reads (but warn about them) */
 	if (parrot_msg_len[parrot_msg_idx_rd] != copied) {
-		warn("short read detected\n");
+//		warn("short read detected\n");
 	}
 	/* loop into the message length table */
 	parrot_msg_idx_rd = (parrot_msg_idx_rd+1)%PARROT_MSG_FIFO_MAX;
@@ -188,19 +181,19 @@ static ssize_t sys_reset(struct device* dev, struct device_attribute* attr, cons
 }
 
 /* Declare the sysfs entries. The macros create instances of dev_attr_fifo and dev_attr_reset */
-static DEVICE_ATTR(fifo, S_IWUSR, NULL, sys_add_to_fifo);
-static DEVICE_ATTR(reset, S_IWUSR, NULL, sys_reset);
+static DEVICE_ATTR(fifo, S_IRWXU|S_IRWXG, NULL, sys_add_to_fifo);
+static DEVICE_ATTR(reset, S_IRWXU|S_IRWXG, NULL, sys_reset);
 
 /* Module initialization and release */
 static int __init parrot_module_init(void)
 {
 	int retval;
-	dbg("");
+//	dbg("");
 
 	/* First, see if we can dynamically allocate a major for our device */
 	parrot_major = register_chrdev(0, DEVICE_NAME, &fops);
 	if (parrot_major < 0) {
-		err("failed to register device: error %d\n", parrot_major);
+		//err("failed to register device: error %d\n", parrot_major);
 		retval = parrot_major;
 		goto failed_chrdevreg;
 	}
@@ -209,7 +202,7 @@ static int __init parrot_module_init(void)
 	 * or use a "virtual" device class. For this example, we choose the latter */
 	parrot_class = class_create(THIS_MODULE, CLASS_NAME);
 	if (IS_ERR(parrot_class)) {
-		err("failed to register device class '%s'\n", CLASS_NAME);
+		//err("failed to register device class '%s'\n", CLASS_NAME);
 		retval = PTR_ERR(parrot_class);
 		goto failed_classreg;
 	}
@@ -217,7 +210,7 @@ static int __init parrot_module_init(void)
 	/* With a class, the easiest way to instantiate a device is to call device_create() */
 	parrot_device = device_create(parrot_class, NULL, MKDEV(parrot_major, 0), NULL, CLASS_NAME "_" DEVICE_NAME);
 	if (IS_ERR(parrot_device)) {
-		err("failed to create device '%s_%s'\n", CLASS_NAME, DEVICE_NAME);
+		//err("failed to create device '%s_%s'\n", CLASS_NAME, DEVICE_NAME);
 		retval = PTR_ERR(parrot_device);
 		goto failed_devreg;
 	}
@@ -226,11 +219,11 @@ static int __init parrot_module_init(void)
 	 * dev_attr_fifo and dev_attr_reset come from the DEVICE_ATTR(...) earlier */
 	retval = device_create_file(parrot_device, &dev_attr_fifo);
 	if (retval < 0) {
-		warn("failed to create write /sys endpoint - continuing without\n");
+		//warn("failed to create write /sys endpoint - continuing without\n");
 	}
 	retval = device_create_file(parrot_device, &dev_attr_reset);
 	if (retval < 0) {
-		warn("failed to create reset /sys endpoint - continuing without\n");
+		//warn("failed to create reset /sys endpoint - continuing without\n");
 	}
 
 	mutex_init(&parrot_device_mutex);

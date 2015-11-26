@@ -2,7 +2,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/slab.h>
-//#include <linux/fs.h>
+#include <linux/fs.h>
 //#include <linux/device.h>
 #include <linux/types.h>
 //#include <linux/mutex.h>
