@@ -9,6 +9,7 @@
 //#include <linux/kfifo.h>
 #include <linux/ioctl.h>
 #include <asm/uaccess.h>
+#include <linux/jiffies.h>
 
 #include <linux/dma-mapping.h>
 
@@ -103,7 +104,8 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
   int err = 0;//, tmp;
   //int retval = 0;
   //unsigned long int *addr;
-  
+  unsigned long jiff_tmp;
+
   memory_area mem_arg;
   struct mmap_info *info;
   char str[80];
@@ -135,7 +137,7 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
   //		return -1;
 
 
-  copy_from_user(&mem_arg,(memory_area __user *)arg,sizeof(memory_area));
+
 
   switch(cmd){
   case DEVICE_IOC_GETDMA:
@@ -144,12 +146,10 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
 #ifdef DEBUG
     printk(KERN_INFO "Ask kernel  for  %d pages", 2<<dma_order);
 #endif
-
     kv_addr=__get_free_pages(0,dma_order);
 #ifdef DEBUG
     printk(KERN_INFO "Get from kernel at %lx", (unsigned long)kv_addr);
 #endif
-
     if(kv_addr!=0){
       dma_size=(2<<dma_order)*PAGE_SIZE;
 
@@ -158,13 +158,10 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
       info->size=dma_size;
       info->order=dma_order;
       filp->private_data = info;
-
       dma_handle=dma_map_single( DEVICE_VAR ,(void *)kv_addr,dma_size,DMA_BIDIRECTIONAL);
       mem_arg.area=kv_addr;
       mem_arg.area_size=dma_size;
       mem_arg.ph_area=__phys_addr(kv_addr);
-
-
 #ifdef DEBUG
       printk(KERN_INFO "ioctl asks for %d bytes  kv_addr==0x%lx, saves to 0x%lx", (unsigned int)dma_size, (unsigned long)kv_addr, __phys_addr(kv_addr));
 #endif
@@ -188,21 +185,28 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
       filp->private_data=NULL;
     }
     break;
+
   case  DEVICE_IOC_MAPAREA:
     //    copy_from_user(&mem_arg,(memory_area __user *)arg,sizeof(memory_area));
     info=filp->private_data;
     strncpy(str,info->data,79);
     printk(KERN_INFO "area==_%s_\n",str);
-
     break;
+
   case  DEVICE_IOC_UNMAPAREA:
     copy_from_user(&mem_arg,(memory_area __user *)arg,sizeof(memory_area));
-
     break;
+
   case  DEVICE_TEST_DATA:
     info=filp->private_data;
     memcpy(info->data, "hello from kernel this is file: ", 32);
     memcpy(info->data + 32, filp->f_dentry->d_name.name, strlen(filp->f_dentry->d_name.name));
+    break;
+
+  case DEVICE_IOC_GETJIFFIES:
+    jiff_tmp=jiffies;
+    *(unsigned long *)arg=jiff_tmp;
+    printk(KERN_INFO "Jiffy == %ld\n",jiff_tmp);
     break;
   default:
     return -1;
@@ -210,99 +214,5 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
 
   return 0;
 }
-
-
-/* /\* */
-/*  * open and close: just keep track of how many times the device is */
-/*  * mapped, to avoid releasing it. */
-/*  *\/ */
-
-/* void scullp_vma_open(struct vm_area_struct *vma) */
-/* { */
-/* 	struct scullp_dev *dev = vma->vm_private_data; */
-
-/* 	dev->vmas++; */
-/* } */
-
-/* void scullp_vma_close(struct vm_area_struct *vma) */
-/* { */
-/* 	struct scullp_dev *dev = vma->vm_private_data; */
-
-/* 	dev->vmas--; */
-/* } */
-
-/* /\* */
-/*  * The nopage method: the core of the file. It retrieves the */
-/*  * page required from the scullp device and returns it to the */
-/*  * user. The count for the page must be incremented, because */
-/*  * it is automatically decremented at page unmap. */
-/*  * */
-/*  * For this reason, "order" must be zero. Otherwise, only the first */
-/*  * page has its count incremented, and the allocating module must */
-/*  * release it as a whole block. Therefore, it isn't possible to map */
-/*  * pages from a multipage block: when they are unmapped, their count */
-/*  * is individually decreased, and would drop to 0. */
-/*  *\/ */
-
-/* struct page *device_vma_nopage(struct vm_area_struct *vma, */
-/*                                 unsigned long address, int *type) */
-/* { */
-/* 	unsigned long offset; */
-/* 	struct scullp_dev *ptr, *dev = vma->vm_private_data; */
-/* 	struct page *page = NOPAGE_SIGBUS; */
-/* 	void *pageptr = NULL; /\* default to "missing" *\/ */
-
-/* 	down(&dev->sem); */
-/* 	offset = (address - vma->vm_start) + (vma->vm_pgoff << PAGE_SHIFT); */
-/* 	if (offset >= dev->size) goto out; /\* out of range *\/ */
-
-/* 	/\* */
-/* 	 * Now retrieve the scullp device from the list,then the page. */
-/* 	 * If the device has holes, the process receives a SIGBUS when */
-/* 	 * accessing the hole. */
-/* 	 *\/ */
-/* 	offset >>= PAGE_SHIFT; /\* offset is a number of pages *\/ */
-/* 	for (ptr = dev; ptr && offset >= dev->qset;) { */
-/* 		ptr = ptr->next; */
-/* 		offset -= dev->qset; */
-/* 	} */
-/* 	if (ptr && ptr->data) pageptr = ptr->data[offset]; */
-/* 	if (!pageptr) goto out; /\* hole or end-of-file *\/ */
-/* 	page = virt_to_page(pageptr); */
-
-/* 	/\* got it, now increment the count *\/ */
-/* 	get_page(page); */
-/* 	if (type) */
-/* 		*type = VM_FAULT_MINOR; */
-/*   out: */
-/* 	up(&dev->sem); */
-/* 	return page; */
-/* } */
-
-
-
-/* struct vm_operations_struct scullp_vm_ops = { */
-/* 	.open =     scullp_vma_open, */
-/* 	.close =    scullp_vma_close, */
-/* 	.nopage =   scullp_vma_nopage, */
-/* }; */
-
-
-/* int scullp_mmap(struct file *filp, struct vm_area_struct *vma) */
-/* { */
-/* 	struct inode *inode = filp->f_dentry->d_inode; */
-
-/* 	/\* refuse to map if order is not 0 *\/ */
-/* 	if (scullp_devices[iminor(inode)].order) */
-/* 		return -ENODEV; */
-
-/* 	/\* don't do anything here: "nopage" will set up page table entries *\/ */
-/* 	vma->vm_ops = &scullp_vm_ops; */
-/* 	vma->vm_flags |= VM_RESERVED; */
-/* 	vma->vm_private_data = filp->private_data; */
-/* 	scullp_vma_open(vma); */
-/* 	return 0; */
-/* } */
-
 
 

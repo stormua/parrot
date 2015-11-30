@@ -39,3 +39,7 @@ endif
 test1:
 	gcc -o test1 test_parrot.c
 
+
+test2:
+	gcc -o test2 test2_parrot.c
+
