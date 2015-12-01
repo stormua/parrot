@@ -14,7 +14,7 @@
 #include <linux/dma-mapping.h>
 
 
-#include "parrot_driver.h"
+#include "pp_dma_driver.h"
 #define _KERNEL_MODULE
 #include "device_ioctl.h"
 
@@ -151,7 +151,7 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
     printk(KERN_INFO "Get from kernel at %lx", (unsigned long)kv_addr);
 #endif
     if(kv_addr!=0){
-      dma_size=(2<<dma_order)*PAGE_SIZE;
+      dma_size=(1<<dma_order)*PAGE_SIZE;
 
       info = kmalloc(sizeof(struct mmap_info), GFP_KERNEL);    
       info->data = (char *)kv_addr;

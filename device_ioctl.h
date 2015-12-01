@@ -17,6 +17,7 @@ typedef struct {
   unsigned long area_size;
   unsigned long area;
   unsigned long ph_area;
+  //  dma
 
 } memory_area;
 
@@ -28,7 +29,6 @@ typedef struct {
 
 /* Use 'k' as magic number */
 #define DEVICE_IOC_MAGIC  0x82
-/* Please use a different 8-bit number in your code */
 
 #define DEVICE_IOCRESET    _IO(DEVICE_IOC_MAGIC, 0)
 

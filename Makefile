@@ -1,11 +1,13 @@
-#TARGET = parrot_driver
+#TARGET = pp_dma_driver
 
-parrotioctl-objs := parrot_driver.o device_ioctl.o
+pp_dma_driver-objs := pp_dma_driver.o device_ioctl.o
+
+#CFLAGS_MODULE=-Werror
 
 ifneq ($(KERNELRELEASE),)
 # call from kernel build system
 
-obj-m	:= parrotioctl.o
+obj-m	+= pp_dma_driver.o
 
 
 else
