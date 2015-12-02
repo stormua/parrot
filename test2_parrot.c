@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <sys/mman.h>
 
-#include "parrot_driver.h"
+#include "ppdma_driver.h"
 #include "device_ioctl.h"
 
 
@@ -23,7 +23,7 @@ main()
   char * address = NULL;
 
   
-   fd=open("/dev/parrot_device",O_RDWR);
+   fd=open("/dev/pp_dma_device",O_RDWR);
    if(fd==-1){
      fprintf(stderr, "Cannot open file");
      exit(1);

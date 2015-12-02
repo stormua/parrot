@@ -1,6 +1,8 @@
 #ifndef _DEVICE_IOCTH_H
 #define _DEVICE_IOCTH_H
 
+#include <linux/types.h>
+
 /*******************************************************************/
 //#ifndef  
 //#error Not ready!!!!!!!!!!!
@@ -17,8 +19,8 @@ typedef struct {
   unsigned long area_size;
   unsigned long area;
   unsigned long ph_area;
-  //  dma
-
+  //  dma_addr_t dma_area;
+  
 } memory_area;
 
 

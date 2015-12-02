@@ -144,7 +144,7 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
     copy_from_user(&mem_arg,(memory_area __user *)arg,sizeof(memory_area));
     dma_order=mem_arg.area_order;
 #ifdef DEBUG
-    printk(KERN_INFO "Ask kernel  for  %d pages", 2<<dma_order);
+    printk(KERN_INFO "Ask kernel  for  %d pages", 1<<dma_order);
 #endif
     kv_addr=__get_free_pages(0,dma_order);
 #ifdef DEBUG
@@ -162,6 +162,7 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
       mem_arg.area=kv_addr;
       mem_arg.area_size=dma_size;
       mem_arg.ph_area=__phys_addr(kv_addr);
+      //      mem_arg.dma_area=dma_handle;
 #ifdef DEBUG
       printk(KERN_INFO "ioctl asks for %d bytes  kv_addr==0x%lx, saves to 0x%lx", (unsigned int)dma_size, (unsigned long)kv_addr, __phys_addr(kv_addr));
 #endif
@@ -175,11 +176,11 @@ long device_ioctl(struct file* filp,unsigned int cmd, unsigned long arg)
     copy_from_user(&mem_arg,(memory_area __user *)arg,sizeof(memory_area));
     if(mem_arg.area!=0){
 #ifdef DEBUG
-      printk(KERN_INFO "Try to clear %d pages\n",2<<mem_arg.area_order);
+      printk(KERN_INFO "Try to clear %d pages\n",1<<mem_arg.area_order);
 #endif
       info=filp->private_data;
 
-      dma_unmap_single( DEVICE_VAR ,dma_handle,mem_arg.area_size,DMA_BIDIRECTIONAL);
+      dma_unmap_single( DEVICE_VAR, dma_handle, mem_arg.area_size, DMA_BIDIRECTIONAL);
       free_pages(info->data, info->order);
       kfree(info);
       filp->private_data=NULL;

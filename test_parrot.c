@@ -9,6 +9,7 @@
 #include <linux/ioctl.h>
 #include <stddef.h>
 #include <sys/mman.h>
+#include <asm/types.h>
 
 #include "ppdma_driver.h"
 #include "device_ioctl.h"
@@ -25,7 +26,7 @@ main()
   
   memset((void *)&test_dma,0,sizeof(memory_area));
   
-   fd=open("/dev/parrot_device",O_RDWR);
+   fd=open("/dev/pp_dma_device",O_RDWR);
    if(fd==-1){
      fprintf(stderr, "Cannot open file");
      exit(1);
@@ -36,7 +37,7 @@ main()
    //  test_dma.is_placed=0;
    test_dma.area_order=2;
    
-   printf("Ask for area %d pages\n",2<<test_dma.area_order);
+   printf("Ask for area %d pages\n",1<<test_dma.area_order);
    
    err=ioctl(fd,DEVICE_IOC_GETDMA, &test_dma);
    if(err!=0){
