@@ -21,14 +21,12 @@
 #ifndef _PP_DMA_DEVICE_H
 #define _PP_DMA_DEVICE_H
 
-#define DEVICE_NAME "device"
-#define CLASS_NAME "pp_dma"
-//#define PARROT_MSG_FIFO_SIZE 1024
-//#define PARROT_MSG_FIFO_MAX  128
+#define DEVICE_NAME "ppdma"
+#define CLASS_NAME "ppdma"
 
 #define AUTHOR "SB"
-#define DESCRIPTION "pp_dma driver for bobcat"
-#define VERSION "0.1"
+#define DESCRIPTION "pp_dma"
+#define VERSION "1"
 
 /* We'll use our own macros for printk */
 #define dbg(format, arg...) do { if (debug) pr_info(CLASS_NAME ": %s: " format , __FUNCTION__ , ## arg); } while (0)

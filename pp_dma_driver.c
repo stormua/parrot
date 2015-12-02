@@ -29,7 +29,7 @@
 #include <linux/kfifo.h>
 #include <linux/ioctl.h>
 #include <asm/uaccess.h>
-
+#include <linux/cdev.h>
 #include <linux/dma-mapping.h>
 
 #include "pp_dma_driver.h"
@@ -47,14 +47,12 @@ MODULE_VERSION(VERSION);
 MODULE_LICENSE("GPL");
 
 
-
+static struct cdev *pp_dma_cdev=NULL;
 static struct class* pp_dma_class = NULL;
+static dev_t pp_dma_dev;
 
 static int pp_dma_major;
 
-
-/* Flag used with the one_shot mode */
-static bool message_read;
 /* A mutex will ensure that only one process accesses our device */
 static DEFINE_MUTEX(pp_dma_device_mutex);
 
@@ -109,83 +107,71 @@ static struct file_operations fops = {
 	.mmap = op_mmap,
 };
 
-/* This sysfs entry resets the FIFO */
-static ssize_t sys_reset(struct device* dev, struct device_attribute* attr, const char* buf, size_t count)
-{
-        dbg("");
-
-        /* Ideally, we would have a mutex around the FIFO, to ensure that we don't reset while in use.
-         * To keep this sample simple, and because this is a sysfs operation, we don't do that */
-	//        kfifo_reset(&parrot_msg_fifo);
-        //parrot_msg_idx_rd = parrot_msg_idx_wr = 0;
-
-        return 0;
-}
-
-/* Declare the sysfs entries. The macros create instances of dev_attr_fifo and dev_attr_reset */
-static DEVICE_ATTR(reset, S_IRWXU|S_IRWXG, NULL, sys_reset);
 
 /* Module initialization and release */
 static int __init pp_dma_module_init(void)
 {
-	int retval;
-	dbg("");
+  int retval;
+  dbg("");
 
-	/* First, see if we can dynamically allocate a major for our device */
-	pp_dma_major = register_chrdev(0, DEVICE_NAME, &fops);
-	if (pp_dma_major < 0) {
-	  printk(KERN_INFO "failed to register device: error %d\n", pp_dma_major);
-	  retval = pp_dma_major;
-	  goto failed_chrdevreg;
-	}else{
-	  printk(KERN_INFO "Device registered major=%d \n",pp_dma_major);
-	}
+/* Alloc a device region */
+  retval = alloc_chrdev_region(&pp_dma_dev, 1, 1, DEVICE_NAME);
+  if (retval != 0)          /* error */
+    goto failed_cdev;
 
-	/* We can either tie our device to a bus (existing, or one that we create)
-	 * or use a "virtual" device class. For this example, we choose the latter */
-	pp_dma_class = class_create(THIS_MODULE, CLASS_NAME);
-	if (IS_ERR(pp_dma_class)) {
-		err("failed to register device class '%s'\n", CLASS_NAME);
-		retval = PTR_ERR(pp_dma_class);
-		goto failed_classreg;
-	}
+  printk(KERN_INFO "ppdma dev == %d \n", (int) pp_dma_dev);
+  
+/* Registring */
+  pp_dma_cdev = cdev_alloc();
+  if (!pp_dma_cdev) 
+    goto failed_cdev;
 
-	/* With a class, the easiest way to instantiate a device is to call device_create() */
-	pp_dma_device = device_create(pp_dma_class, NULL, MKDEV(pp_dma_major, 0), NULL, CLASS_NAME "_" DEVICE_NAME,NULL);
-	if (IS_ERR(pp_dma_device)) {
-		err("failed to create device '%s_%s'\n", CLASS_NAME, DEVICE_NAME);
-		retval = PTR_ERR(pp_dma_device);
-		goto failed_devreg;
-	}
+/* Init it! */
+  cdev_init(pp_dma_cdev, &fops); 
+    
+/* Tell the kernel "hey, I'm exist" */
+  retval = cdev_add(pp_dma_cdev, pp_dma_dev, 1);
+  if (retval < 0) 
+    goto cdev_add_out;
 
+/* class */
+  pp_dma_class = class_create(THIS_MODULE, CLASS_NAME);
+  if (IS_ERR(pp_dma_class)) {
+    printk(KERN_ERR DEVICE_NAME " cant create class %s\n", CLASS_NAME);
+    goto class_err;
+  }
 
-        retval = device_create_file(parrot_device, &dev_attr_reset);
-        if (retval < 0) {
-                //warn("failed to create reset /sys endpoint - continuing without\n");
-        }
-
-
-	mutex_init(&pp_dma_device_mutex);
-
-
-	return 0;
-
-failed_devreg:
-	class_destroy(pp_dma_class);
-failed_classreg:
-	unregister_chrdev(pp_dma_major, DEVICE_NAME);
-failed_chrdevreg:
-	return -1;
+/* device */
+  pp_dma_device = device_create(pp_dma_class, NULL, pp_dma_dev, NULL, DEVICE_NAME);
+  if (IS_ERR(pp_dma_device)) {
+    printk(KERN_ERR DEVICE_NAME " cant create device %s\n", DEVICE_NAME);
+    goto device_err;
+  }
+ 
+  mutex_init(&pp_dma_device_mutex);
+ 
+  
+  return 0;
+  
+ device_err:
+  device_destroy(pp_dma_class, pp_dma_dev);
+ class_err:
+  class_unregister(pp_dma_class);
+  class_destroy(pp_dma_class);
+ cdev_add_out:
+  cdev_del(pp_dma_cdev);
+ failed_cdev:
+  return -1;
 }
 
 static void __exit pp_dma_module_exit(void)
 {
 	dbg("");
-
-        device_remove_file(parrot_device, &dev_attr_reset);
-	device_destroy(pp_dma_class, MKDEV(pp_dma_major, 0));
-	class_destroy(pp_dma_class);
-	unregister_chrdev(pp_dma_major, DEVICE_NAME);
+        device_destroy(pp_dma_class, pp_dma_dev);
+        class_unregister(pp_dma_class);
+        class_destroy(pp_dma_class);
+        cdev_del(pp_dma_cdev);
+	return;
 }
 
 /* Let the kernel know the calls for module init and exit */

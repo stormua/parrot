@@ -7,7 +7,7 @@ pp_dma_driver-objs := pp_dma_driver.o device_ioctl.o
 ifneq ($(KERNELRELEASE),)
 # call from kernel build system
 
-obj-m	+= pp_dma_driver.o
+obj-m	:= pp_dma_driver.o
 
 
 else
