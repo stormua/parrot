@@ -62,36 +62,57 @@ main()
      fprintf(stderr, "%x",*address);
      fprintf(stderr, "\n");
 
+     printf("raw\n");
      /* use 'map' pointer to access the mapped area! */
      for (i=0;i<10;i++){
        printf("content: 0x%x\n",*(address+i));
      }
-     
-     
-     err=ioctl(fd,DEVICE_TEST_DATA, &test_dma);
-     if(err!=0){
-       printf("Get error %d\n",err);
-     }
 
-     err=ioctl(fd,DEVICE_IOC_MAPAREA, &test_dma);
-     if(err!=0){
-       printf("Get error %d\n",err);
+     printf("set\n");
+     for(i=0;i<test_dma.area_size;i++){
+       int a=i%256;
+       *(address+i)=a;
+       printf("to addr+%d write %x read %x\n",i,a, (char)*(address+i)&0xff);
      }
-
-     for (i=0;i<10;i++){
-       printf("content: 0x%x %c\n",*(address+i),(char)(*(address+i))  );
-     }
-
      memcpy(address, "ByeByeBye\0", 10);
+
+     printf("Size of addr=%d\n",sizeof(*address));
+     /* use 'map' pointer to access the mapped area! */
      for (i=0;i<10;i++){
-       printf("content: 0x%x %c\n",*(address+i),(char)(*(address+i))  );
+       printf("content: 0x%x\n",*(address+i));
      }
 
-
-     err=ioctl(fd,DEVICE_IOC_MAPAREA, &test_dma);
-     if(err!=0){
-       printf("Get error %d\n",err);
+     for(i=0;i<test_dma.area_size;i++){
+       if( *(address+i) != (char)(i%256)){	 
+	 fprintf(stdout,"IO error at offset %d 0x%x != 0x%x (%d) \n",i,*(address+i),i%255, i%255  );
+       }
      }
+    
+     
+     /* err=ioctl(fd,DEVICE_TEST_DATA, &test_dma); */
+     /* if(err!=0){ */
+     /*   printf("Get error %d\n",err); */
+     /* } */
+
+     /* err=ioctl(fd,DEVICE_IOC_MAPAREA, &test_dma); */
+     /* if(err!=0){ */
+     /*   printf("Get error %d\n",err); */
+     /* } */
+
+     /* for (i=0;i<10;i++){ */
+     /*   printf("content: 0x%x %c\n",*(address+i),(char)(*(address+i))  ); */
+     /* } */
+
+     /* memcpy(address, "ByeByeBye\0", 10); */
+     /* for (i=0;i<10;i++){ */
+     /*   printf("content: 0x%x %c\n",*(address+i),(char)(*(address+i))  ); */
+     /* } */
+
+
+     /* err=ioctl(fd,DEVICE_IOC_MAPAREA, &test_dma); */
+     /* if(err!=0){ */
+     /*   printf("Get error %d\n",err); */
+     /* } */
 
      /* unmap the area & error checking */
      if (munmap(address,test_dma.area_size)==-1){
