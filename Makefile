@@ -1,11 +1,11 @@
 #TARGET = parrot_driver
 
-parrotioctl-objs := parrot_driver.o device_ioctl.o
+ppdmadevice-objs := ppdma_driver.o device_ioctl.o
 
 ifneq ($(KERNELRELEASE),)
 # call from kernel build system
 
-obj-m	:= parrotioctl.o
+obj-m	:= ppdmadevice.o
 
 
 else

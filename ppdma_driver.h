@@ -18,17 +18,17 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _PARROT_DEVICE_H
-#define _PARROT_DEVICE_H
+#ifndef _PPDMA_DEVICE_H
+#define _PPDMA_DEVICE_H
 
 #define DEVICE_NAME "device"
-#define CLASS_NAME "parrot"
+#define CLASS_NAME "pp_dma"
 #define PARROT_MSG_FIFO_SIZE 1024
 #define PARROT_MSG_FIFO_MAX  128
 
-#define AUTHOR "Pete Batard <pete@akeo.ie>"
-#define DESCRIPTION "'parrot' sample device driver"
-#define VERSION "1.2"
+#define AUTHOR "SB"
+#define DESCRIPTION "pp dma device driver"
+#define VERSION "1.0"
 
 /* We'll use our own macros for printk */
 #define dbg(format, arg...) do { if (debug) pr_info(CLASS_NAME ": %s: " format , __FUNCTION__ , ## arg); } while (0)

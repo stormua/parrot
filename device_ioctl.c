@@ -14,7 +14,7 @@
 #include <linux/dma-mapping.h>
 
 
-#include "parrot_driver.h"
+#include "ppdma_driver.h"
 #define _KERNEL_MODULE
 #include "device_ioctl.h"
 

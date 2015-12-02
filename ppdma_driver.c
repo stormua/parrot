@@ -32,7 +32,7 @@
 
 #include <linux/dma-mapping.h>
 
-#include "parrot_driver.h"
+#include "ppdma_driver.h"
 
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!
