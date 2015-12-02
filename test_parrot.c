@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <sys/mman.h>
 
-#include "parrot_driver.h"
+#include "ppdma_driver.h"
 #include "device_ioctl.h"
 
 
