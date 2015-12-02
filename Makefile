@@ -1,13 +1,12 @@
 #TARGET = pp_dma_driver
 
-pp_dma_driver-objs := pp_dma_driver.o device_ioctl.o
-
-#CFLAGS_MODULE=-Werror
+ppdmadevice-objs := ppdma_driver.o device_ioctl.o
 
 ifneq ($(KERNELRELEASE),)
 # call from kernel build system
 
-obj-m	:= pp_dma_driver.o
+obj-m	:= ppdmadevice.o
+
 
 
 else
