@@ -45,57 +45,95 @@ struct mmap_info
 #define DEBUG
 
 
-
-
-void mmap_open(struct vm_area_struct *vma)
-{
-    struct mmap_info *info = (struct mmap_info *)vma->vm_private_data;
-    info->reference++;
-}
+/* void mmap_open(struct vm_area_struct *vma) */
+/* { */
+/*     struct mmap_info *info = (struct mmap_info *)vma->vm_private_data; */
+/*     info->reference++; */
+/* } */
  
-void mmap_close(struct vm_area_struct *vma)
-{
-    struct mmap_info *info = (struct mmap_info *)vma->vm_private_data;
-    info->reference--;
-}
+/* void mmap_close(struct vm_area_struct *vma) */
+/* { */
+/*     struct mmap_info *info = (struct mmap_info *)vma->vm_private_data; */
+/*     info->reference--; */
+/* } */
  
-static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
-{
-    struct page *page;
-    struct mmap_info *info;    
+/* static int mmap_fault(struct vm_area_struct *vma, struct vm_fault *vmf) */
+/* { */
+/*     struct page *page; */
+/*     struct mmap_info *info;     */
      
-    info = (struct mmap_info *)vma->vm_private_data;
-    if (!info->data)
-    {
-        printk("No data\n");
-        return 0;    
-    }
+/*     info = (struct mmap_info *)vma->vm_private_data; */
+/*     if (!info->data) */
+/*     { */
+/*         printk("No data\n"); */
+/*         return 0;     */
+/*     } */
      
-    page = virt_to_page(info->data);    
+/*     page = virt_to_page(info->data);     */
      
-    get_page(page);
-    vmf->page = page;            
+/*     get_page(page); */
+/*     vmf->page = page;             */
      
-    return 0;
-}
+/*     return 0; */
+/* } */
  
-struct vm_operations_struct mmap_vm_ops =
-{
-    .open =     mmap_open,
-    .close =    mmap_close,
-    .fault =    mmap_fault,    
-};
+/* struct vm_operations_struct mmap_vm_ops = */
+/* { */
+/*     .open =     mmap_open, */
+/*     .close =    mmap_close, */
+/*     .fault =    mmap_fault,     */
+/* }; */
 
 
  
+/* int op_mmap(struct file *filp, struct vm_area_struct *vma) */
+/* { */
+/*     vma->vm_ops = &mmap_vm_ops; */
+/*     vma->vm_flags |= VM_RESERVED;     */
+/*     vma->vm_private_data = filp->private_data; */
+/*     mmap_open(vma); */
+/*     return 0; */
+/* } */
+
 int op_mmap(struct file *filp, struct vm_area_struct *vma)
 {
-    vma->vm_ops = &mmap_vm_ops;
-    vma->vm_flags |= VM_RESERVED;    
-    vma->vm_private_data = filp->private_data;
-    mmap_open(vma);
-    return 0;
+  unsigned long pfn;
+  unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
+  unsigned long len = vma->vm_end - vma->vm_start;
+
+
+  struct mmap_info *info;
+  info=filp->private_data;
+
+  printk(KERN_ALERT "\nRAGHU: pcie-axi: Inside pcie_MMAP offset==%ld len=%ld ",offset,len);
+
+  if (offset >= PAGE_SIZE)
+    return -EINVAL;
+
+  // if (len > (PAGE_SIZE - offset))
+  //  return -EINVAL;
+
+  vma->vm_flags |= VM_RESERVED;
+  vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+
+  printk(KERN_ALERT "\nRAGHU: pcie-axi:  mapping %ld bytes of mem at offset %ld\n", len, offset);
+
+  /* need to get the pfn for remap_pfn_range --
+     ds->wr_buf_ptr is the virtual pointer returned from pci_alloc_consistent*/
+
+  pfn = virt_to_phys(info->data + offset) >> PAGE_SHIFT;
+  /* In Mmap */
+  // io_remap_pfn_range(vma, vma->vm_start, (paddr + offset) >> PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
+  if (remap_pfn_range(vma, vma->vm_start, pfn, len, vma->vm_page_prot)) {
+    printk(KERN_ALERT "remap return error");
+    return -EAGAIN;
+  }
+
+  printk(KERN_ALERT "\nRAGHU: pcie-axi: Exit pcie_MMAP");
+  return 0;
+
 }
+
 
 
 

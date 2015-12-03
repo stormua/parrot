@@ -15,6 +15,8 @@
 #include "device_ioctl.h"
 
 
+#define FILL_MODULE 251
+
 int
 main()
 {
@@ -35,7 +37,7 @@ main()
    
    // test_dma.area=&test1;
    //  test_dma.is_placed=0;
-   test_dma.area_order=2;
+   test_dma.area_order=10;
    
    printf("Ask for area %d pages\n",1<<test_dma.area_order);
    
@@ -70,11 +72,14 @@ main()
 
      printf("set\n");
      for(i=0;i<test_dma.area_size;i++){
-       int a=i%256;
+       int a=i % FILL_MODULE;
        *(address+i)=a;
        printf("to addr+%d write %x read %x\n",i,a, (char)*(address+i)&0xff);
      }
      memcpy(address, "ByeByeBye\0", 10);
+     for (i=0;i<10;i++){
+       printf("content: 0x%x -- %c \n",*(address+i),*(address+i));
+     }
 
      printf("Size of addr=%d\n",sizeof(*address));
      /* use 'map' pointer to access the mapped area! */
@@ -83,8 +88,8 @@ main()
      }
 
      for(i=0;i<test_dma.area_size;i++){
-       if( *(address+i) != (char)(i%256)){	 
-	 fprintf(stdout,"IO error at offset %d 0x%x != 0x%x (%d) \n",i,*(address+i),i%255, i%255  );
+       if( *(address+i) != (char)(i % FILL_MODULE)){	 
+	 fprintf(stdout,"IO error at offset %d 0x%x != 0x%x (%d) \n",i,*(address+i),i % FILL_MODULE, i%FILL_MODULE  );
        }
      }
     
@@ -94,10 +99,10 @@ main()
      /*   printf("Get error %d\n",err); */
      /* } */
 
-     /* err=ioctl(fd,DEVICE_IOC_MAPAREA, &test_dma); */
-     /* if(err!=0){ */
-     /*   printf("Get error %d\n",err); */
-     /* } */
+     err=ioctl(fd,DEVICE_IOC_MAPAREA, &test_dma);
+     if(err!=0){
+       printf("Get error %d\n",err);
+     }
 
      /* for (i=0;i<10;i++){ */
      /*   printf("content: 0x%x %c\n",*(address+i),(char)(*(address+i))  ); */
